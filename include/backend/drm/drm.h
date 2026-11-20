@@ -199,6 +199,7 @@ struct wlr_drm_connector {
 	drmModeConnection status;
 	uint32_t id;
 	uint64_t max_bpc_bounds[2];
+	uint64_t initial_max_bpc; // 0 until read before the first modeset
 	struct wlr_drm_lease *lease;
 
 	struct wlr_drm_crtc *crtc;

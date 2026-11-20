@@ -508,7 +508,11 @@ static void atomic_connector_add(struct atomic *atom,
 			DRM_MODE_CONTENT_TYPE_GRAPHICS);
 	}
 	if (modeset && active && conn->props.max_bpc != 0 && conn->max_bpc_bounds[1] != 0) {
-		atomic_add(atom, conn->id, conn->props.max_bpc, pick_max_bpc(conn, state->primary_fb));
+		// Keep the value inherited from the previous DRM master across hotplug.
+		if (conn->initial_max_bpc != 0 ||
+				get_drm_prop(drm->fd, conn->id, conn->props.max_bpc, &conn->initial_max_bpc)) {
+			atomic_add(atom, conn->id, conn->props.max_bpc, pick_max_bpc(conn, state->primary_fb));
+		}
 	}
 	if (conn->props.colorspace != 0) {
 		atomic_add(atom, conn->id, conn->props.colorspace, state->colorspace);

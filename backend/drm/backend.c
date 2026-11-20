@@ -33,8 +33,18 @@ static void backend_destroy(struct wlr_backend *backend) {
 
 	struct wlr_drm_backend *drm = get_drm_backend_from_backend(backend);
 
+	bool can_restore = drm->session->active && drmIsMaster(drm->fd);
 	struct wlr_drm_connector *conn, *next;
 	wl_list_for_each_safe(conn, next, &drm->connectors, link) {
+		// Give the next DRM master the connector's original bit-depth ceiling.
+		uint64_t current;
+		if (can_restore && !conn->lease && conn->initial_max_bpc != 0 &&
+				get_drm_prop(drm->fd, conn->id, conn->props.max_bpc, &current) &&
+				current != conn->initial_max_bpc &&
+				drmModeObjectSetProperty(drm->fd, conn->id, DRM_MODE_OBJECT_CONNECTOR,
+					conn->props.max_bpc, conn->initial_max_bpc) != 0) {
+			wlr_drm_conn_log_errno(conn, WLR_ERROR, "Failed to restore max bpc");
+		}
 		conn->crtc = NULL; // leave CRTCs on when shutting down
 		destroy_drm_connector(conn);
 	}
